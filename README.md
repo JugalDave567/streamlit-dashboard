@@ -1,2 +1,2 @@
 # streamlit-dashboard
-Training dashboard - Verion of VMAP
+Training dashboard - Version of VMAP
