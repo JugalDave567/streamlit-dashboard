@@ -34,7 +34,7 @@ try:
     logo = Image.open("rru_logo.png")
     st.image(logo, width=150)
 except FileNotFoundError:
-    st.info("📁 `rru_logo.png` not found. Please place it in the app directory.")
+    st.info("📁 rru_logo.png not found. Please place it in the app directory.")
 
 # ───────── SEARCH BY NAME + 90 HOURS FILTER ─────────
 st.sidebar.markdown("### 🔍 Participant Filters")
@@ -307,17 +307,55 @@ with col2:
         st.plotly_chart(fig, use_container_width=True)
 
 st.markdown("### Geographic Spread of Participants (State/Central)")
+
 if not data.empty:
-    state_df = data["State"].value_counts().reset_index()
-    state_df.columns = ["State", "Count"]
-    fig_map = px.choropleth(
-        state_df,
-        locations="State",
-        locationmode="geojson-id",
+    # Hardcoded approximate lat/lon for Indian states
+    state_coords = {
+        "Andhra Pradesh": [15.9129, 79.7400], "Arunachal Pradesh": [28.2180, 94.7278],
+        "Assam": [26.2006, 92.9376], "Bihar": [25.0961, 85.3131],
+        "Chhattisgarh": [21.2787, 81.8661], "Goa": [15.2993, 74.1240],
+        "Gujarat": [22.2587, 71.1924], "Haryana": [29.0588, 76.0856],
+        "Himachal Pradesh": [31.1048, 77.1734], "Jharkhand": [23.6102, 85.2799],
+        "Karnataka": [15.3173, 75.7139], "Kerala": [10.8505, 76.2711],
+        "Madhya Pradesh": [22.9734, 78.6569], "Maharashtra": [19.7515, 75.7139],
+        "Manipur": [24.6637, 93.9063], "Meghalaya": [25.4670, 91.3662],
+        "Mizoram": [23.1645, 92.9376], "Nagaland": [26.1584, 94.5624],
+        "Odisha": [20.9517, 85.0985], "Punjab": [31.1471, 75.3412],
+        "Rajasthan": [27.0238, 74.2179], "Sikkim": [27.5330, 88.5122],
+        "Tamil Nadu": [11.1271, 78.6569], "Telangana": [18.1124, 79.0193],
+        "Tripura": [23.9408, 91.9882], "Uttar Pradesh": [26.8467, 80.9462],
+        "Uttarakhand": [30.0668, 79.0193], "West Bengal": [22.9868, 87.8550],
+        "Delhi": [28.7041, 77.1025], "Jammu and Kashmir": [33.7782, 76.5762],
+        "Ladakh": [34.1526, 77.5770],
+    }
+
+    map_data = data["State"].value_counts().reset_index()
+    map_data.columns = ["State", "Count"]
+    map_data["Lat"] = map_data["State"].map(lambda x: state_coords.get(x, [None, None])[0])
+    map_data["Lon"] = map_data["State"].map(lambda x: state_coords.get(x, [None, None])[1])
+    map_data = map_data.dropna(subset=["Lat", "Lon"])
+
+    fig_map = px.scatter_geo(
+        map_data,
+        lat="Lat",
+        lon="Lon",
+        text="State",
+        size="Count",
         color="Count",
-        title="Participant Distribution by State",
-        color_continuous_scale="Blues"
+        color_continuous_scale="YlOrBr",
+        projection="natural earth",
+        title="Participant Distribution by State (Bubble Map)"
     )
+
+    fig_map.update_geos(
+        visible=False,
+        showcountries=True,
+        showsubunits=True,
+        lataxis_range=[6, 38],
+        lonaxis_range=[68, 98]
+    )
+
+    fig_map.update_layout(margin={"r":0,"t":30,"l":0,"b":0})
     st.plotly_chart(fig_map, use_container_width=True)
 else:
     st.info("No data for map view.")
